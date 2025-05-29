@@ -37,9 +37,15 @@ namespace Application.Dtos.User
         public string? NickName { get; set; }
 
         /// <summary>
-        /// điểm uy tín
+        /// điểm đánh giá trung bình
         /// </summary>
-        public decimal? Credit { get; set; }
+        public decimal? AvgRating { get; set; }
+
+        /// <summary>
+        /// số lượt đánh giá
+        /// </summary>
+        public int? ReviewCount { get; set; }
+
         public Gender? Gender { get; set; }
 
         /// <summary>

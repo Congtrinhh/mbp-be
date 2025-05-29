@@ -1,0 +1,26 @@
+CREATE DEFINER=`admin`@`%` PROCEDURE `proc_user_get_by_id`($id INT)
+    SQL SECURITY INVOKER
+BEGIN
+    -- First result: user info
+    SELECT *
+    FROM `user`
+    WHERE id = $id;
+
+    -- Second result: hosting styles
+    SELECT hs.*
+    FROM mc_hosting_style mhs
+    INNER JOIN hosting_style hs ON hs.id = mhs.hosting_style_id
+    WHERE mhs.mc_id = $id;
+
+    -- Third result: mc types
+    SELECT mt.*
+    FROM mc_mc_type mmt
+    INNER JOIN mc_type mt ON mt.id = mmt.mc_type_id
+    WHERE mmt.mc_id = $id;
+
+    -- Fourth result: provinces
+    SELECT p.*
+    FROM mc_province mp
+    INNER JOIN province p ON p.id = mp.province_id
+    WHERE mp.mc_id = $id;
+END

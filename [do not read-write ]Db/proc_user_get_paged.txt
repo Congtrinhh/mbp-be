@@ -1,0 +1,142 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `proc_user_get_paged`(
+    $FullName VARCHAR(255), 
+    $Email VARCHAR(255), 
+    $PhoneNumber VARCHAR(12), 
+    $IsMc BIT, 
+    $IsVerified BIT, 
+    $IsNewbie BIT, 
+    $NickName VARCHAR(255),  
+    $MinAge INT, 
+    $MaxAge INT, 
+    $IsGetMedia BIT, 
+    $IsGetMcType BIT, 
+    $IsGetProvince BIT,
+    $McTypeIds TEXT, 
+    $HostingStyleIds TEXT, 
+    $ProvinceIds TEXT, 
+    $Genders VARCHAR(255),
+    $OrderBy VARCHAR(255),
+    $Limit INT,
+    $Offset INT
+)
+BEGIN
+	-- tạo bảng tạm lưu tất cả user thỏa mãn điều kiện lọc (chưa paging)
+    DROP TEMPORARY TABLE IF EXISTS tmp_user;
+    SET @sql = 'CREATE TEMPORARY TABLE tmp_user AS ( SELECT u.* FROM user u';
+    
+    IF $McTypeIds IS NOT NULL AND $McTypeIds <> '' THEN
+        SET @sql = CONCAT(@sql, ' INNER JOIN mc_mc_type mmt ON mmt.mc_id = u.id');
+    END IF;
+    
+    IF $HostingStyleIds IS NOT NULL AND $HostingStyleIds <> '' THEN
+        SET @sql = CONCAT(@sql, ' INNER JOIN mc_hosting_style mhs ON mhs.mc_id = u.id');
+    END IF;
+    
+    IF $ProvinceIds IS NOT NULL AND $ProvinceIds <> '' THEN
+        SET @sql = CONCAT(@sql, ' INNER JOIN mc_province mp ON mp.mc_id = u.id');
+    END IF;
+    
+    SET @sql = CONCAT(@sql, ' WHERE 1=1');
+    
+    IF $FullName IS NOT NULL AND $FullName <> ''  THEN
+        SET @sql = CONCAT(@sql, ' AND u.full_name LIKE ''%', $FullName, '%''');
+    END IF;
+    
+    IF $Email IS NOT NULL AND $Email <> '' THEN
+        SET @sql = CONCAT(@sql, ' AND u.email LIKE ''%', $Email, '%''');
+    END IF;
+    
+    IF $PhoneNumber IS NOT NULL AND $PhoneNumber <> '' THEN
+        SET @sql = CONCAT(@sql, ' AND u.phone_number LIKE ''%', $PhoneNumber, '%''');
+    END IF;
+    
+    IF $IsMc IS NOT NULL THEN
+        SET @sql = CONCAT(@sql, ' AND u.is_mc = ', IF ($IsMc, 1, 0));
+    END IF;
+    
+    IF $IsVerified IS NOT NULL THEN
+        SET @sql = CONCAT(@sql, ' AND u.is_verified = ', IF ($IsVerified, 1, 0));
+    END IF;
+    
+    IF $IsNewbie IS NOT NULL THEN
+        SET @sql = CONCAT(@sql, ' AND u.is_newbie = ',  IF ($IsNewbie, 1, 0));
+    END IF;
+    
+    IF $NickName IS NOT NULL THEN
+        SET @sql = CONCAT(@sql, ' AND u.nick_name LIKE ''%', $NickName, '%''');
+    END IF;
+    
+    IF $MinAge IS NOT NULL THEN
+        SET @sql = CONCAT(@sql, ' AND u.age >= ', $MinAge);
+    END IF;
+    
+    IF $MaxAge IS NOT NULL THEN
+        SET @sql = CONCAT(@sql, ' AND u.age <= ', $MaxAge);
+    END IF; 
+    
+    IF $McTypeIds IS NOT NULL and $McTypeIds <> '' THEN
+        SET @sql = CONCAT(@sql, ' AND mmt.mc_type_id IN (', $McTypeIds, ')');
+    END IF;
+    
+    IF $HostingStyleIds IS NOT NULL and $HostingStyleIds <> '' THEN
+        SET @sql = CONCAT(@sql, ' AND mhs.hosting_style_id IN (', $HostingStyleIds, ')');
+    END IF;
+    
+    IF $ProvinceIds IS NOT NULL and $ProvinceIds <> '' THEN
+        SET @sql = CONCAT(@sql, ' AND mp.province_id IN (', $ProvinceIds, ')');
+    END IF;
+    
+    IF $Genders IS NOT NULL and $Genders <> '' THEN
+        SET @sql = CONCAT(@sql, ' AND u.gender IN (', $Genders, ')');
+    END IF;
+    
+    SET @sql = CONCAT(@sql, ' GROUP BY u.id');
+        
+    SET @sql = CONCAT(@sql, ' )');
+    
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+    
+    -- tạo bảng user đã paging
+    DROP TEMPORARY TABLE IF EXISTS tmp_user_paged;
+    SET @sqlUserPaged = concat('CREATE TEMPORARY TABLE tmp_user_paged AS SELECT * FROM tmp_user');
+    
+    IF $OrderBy IS NOT NULL THEN
+    SET @sqlUserPaged = CONCAT(@sqlUserPaged, ' ORDER BY ', $OrderBy);
+END IF;
+
+IF $Limit IS NOT NULL THEN
+    SET @sqlUserPaged = CONCAT(@sqlUserPaged, ' LIMIT ', $Limit);
+END IF;
+
+IF $Offset IS NOT NULL THEN
+    SET @sqlUserPaged = CONCAT(@sqlUserPaged, ' OFFSET ', $Offset);
+END IF;
+
+PREPARE stmtUserPaged FROM @sqlUserPaged;
+EXECUTE stmtUserPaged;
+DEALLOCATE PREPARE stmtUserPaged;
+
+-- paged data
+SELECT * FROM tmp_user_paged;
+
+-- total count
+SELECT COUNT(1) FROM tmp_user;
+
+-- details: join detail with paged user table to get details by user
+IF $IsGetMcType THEN
+    SELECT u.id AS mc_id, mt.*
+    FROM tmp_user_paged u
+    INNER JOIN mc_mc_type mmt ON mmt.mc_id = u.id
+    INNER JOIN mc_type mt ON mmt.mc_type_id = mt.id;
+END IF;
+
+IF $IsGetProvince THEN
+    SELECT u.id AS user_id, p.*
+    FROM tmp_user_paged u
+    INNER JOIN mc_province mp ON mp.mc_id = u.id
+    INNER JOIN province p ON mp.province_id= p.id;
+END IF;
+
+END

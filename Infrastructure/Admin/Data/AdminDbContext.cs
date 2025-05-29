@@ -50,7 +50,6 @@ namespace Infrastructure.Admin.Data
                 builder.Property(e => e.IsMc).HasColumnName("is_mc").IsRequired();
                 builder.Property(e => e.Age).HasColumnName("age");
                 builder.Property(e => e.NickName).HasColumnName("nick_name").HasMaxLength(50);
-                builder.Property(e => e.Credit).HasColumnName("credit").HasPrecision(10, 2);
                 builder.Property(e => e.Gender).HasColumnName("gender").IsRequired();
                 builder.Property(e => e.IsNewbie).HasColumnName("is_newbie").IsRequired();
                 builder.Property(e => e.WorkingArea).HasColumnName("working_area").HasMaxLength(200);

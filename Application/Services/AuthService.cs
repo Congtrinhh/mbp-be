@@ -44,7 +44,6 @@ namespace Application.Services
                     NickName = payload.Name,
                     FullName = payload.Name,
                     Age = 20,
-                    Credit= 10,
                     IsVerified=false,
                 };
 
