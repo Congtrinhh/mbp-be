@@ -27,6 +27,10 @@ namespace Domain.Enums
         /// <summary>
         /// a contract is canceled
         /// </summary>
-        ContractCanceled = 5
+        ContractCanceled = 5,
+        /// <summary>
+        /// get one star review because of canceling an event that are about to start (within 1 day)
+        /// </summary>
+        GetOneStarReviewCancelContract = 6
     }
 }

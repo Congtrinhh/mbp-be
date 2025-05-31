@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using Application.Dtos.Notification;
+﻿﻿using Application.Dtos.Notification;
 using Application.Dtos.User;
 using Application.Exceptions;
 using Application.Interfaces;
@@ -16,22 +16,90 @@ namespace Application.Services
     {
         private readonly INotificationService _notificationService;
         private readonly IContractRepository _contractRepository;
-
-        public ContractService(
-            IContractRepository repository,
-            INotificationService notificationService,
-            ICurrentUserService currentUserService)
-            : base(repository, currentUserService)
-        {
-            _notificationService = notificationService;
-            _contractRepository = repository;
-        }
+        private readonly IClientReviewMcRepository _clientReviewMcRepository;
+        private readonly IMcReviewClientRepository _mcReviewClientRepository;
 
         protected override async Task ValidateBeforeAddingAsync(ContractDto contract)
         {
             if (contract.EventStart.HasValue && contract.EventEnd.HasValue && contract.McId.HasValue)
             {
                 await ValidateEventTimeAsync(contract.EventStart.Value, contract.EventEnd.Value, contract.McId.Value, contract.IsIgnoreBufferCheck);
+            }
+        }
+
+        public ContractService(
+            IContractRepository repository,
+            INotificationService notificationService,
+            ICurrentUserService currentUserService,
+            IClientReviewMcRepository clientReviewMcRepository,
+            IMcReviewClientRepository mcReviewClientRepository)
+            : base(repository, currentUserService)
+        {
+            _notificationService = notificationService;
+            _contractRepository = repository;
+            _clientReviewMcRepository = clientReviewMcRepository;
+            _mcReviewClientRepository = mcReviewClientRepository;
+        }
+
+        private bool IsWithin24Hours(DateTime? eventStart, DateTime? cancelTime)
+        {
+            if (!eventStart.HasValue || !cancelTime.HasValue)
+                return false;
+            return (eventStart.Value - cancelTime.Value).TotalHours <= 24;
+        }
+
+        private async Task CreateAutomaticRating(ContractDto contract, bool isMcCancelled)
+        {
+            if (isMcCancelled)
+            {
+                // MC cancelled - create MC review
+                await _clientReviewMcRepository.AddAsync(new ClientReviewMcDto
+                {
+                    ContractId = contract.Id,
+                    McId = contract.McId.Value,
+                    ClientId = contract.ClientId,
+                    ShortDescription = "Tự động đánh giá 1 sao do hủy sự kiện gấp",
+                    DetailDescription = "MC đã hủy sự kiện trong vòng 1 ngày trước khi sự kiện diễn ra",
+                    OverallPoint = 1,
+                    ProPoint = 1,
+                    AttitudePoint = 1,
+                    ReliablePoint = 1
+                });
+
+                // Send notification to MC
+                await _notificationService.AddAsync(new NotificationDto
+                {
+                    UserId = contract.McId,
+                    Type = NotificationType.GetOneStarReviewCancelContract,
+                    Message = $"Bạn đã bị đánh giá 1 sao vì hủy sự kiện {contract.EventName} trong vòng 1 ngày sự kiện diễn ra",
+                    IsRead = false,
+                    Status = NotificationStatus.NotEditable
+                });
+            }
+            else
+            {
+                // Client cancelled - create Client review
+                await _mcReviewClientRepository.AddAsync(new McReviewClientDto
+                {
+                    ContractId = contract.Id,
+                    McId = contract.McId.Value,
+                    ClientId = contract.ClientId,
+                    ShortDescription = "Tự động đánh giá 1 sao do hủy sự kiện gấp",
+                    DetailDescription = "Khách hàng đã hủy sự kiện trong vòng 1 ngày trước khi sự kiện diễn ra",
+                    OverallPoint = 1,
+                    PaymentPunctualPoint = 1,
+                    ReliablePoint = 1
+                });
+
+                // Send notification to Client
+                await _notificationService.AddAsync(new NotificationDto
+                {
+                    UserId = contract.ClientId,
+                    Type = NotificationType.GetOneStarReviewCancelContract,
+                    Message = $"Bạn đã bị đánh giá 1 sao vì hủy sự kiện {contract.EventName} trong vòng 1 ngày sự kiện diễn ra",
+                    IsRead = false,
+                    Status = NotificationStatus.NotEditable
+                });
             }
         }
 
@@ -49,7 +117,7 @@ namespace Application.Services
 
             var result = await base.UpdateAsync(entity);
 
-            // send notification if the contract is canceled
+            // Handle contract cancellation
             if (originalStatus == ContractStatus.InEffect
                 && entity.Status == ContractStatus.Canceled)
             {
@@ -60,35 +128,47 @@ namespace Application.Services
 
                 if (entity.McCancelDate != null)
                 {
+                    // MC cancelled
                     await _notificationService.AddAsync(new NotificationDto
                     {
                         UserId = entity.ClientId,
                         Type = NotificationType.ContractCanceled,
-                        Message = $"The contract on event {entity.EventName} is canceled.",
+                        Message = $"Hợp đồng cho sự kiện {entity.EventName} đã bị hủy.",
                         AdditionalInfo = JsonConvert.SerializeObject(new ContractCanceledAdditionalInfo
                         {
                             ContractId = entity.Id
                         }, serializerSettings),
                         IsRead = false,
-                        Status = NotificationStatus.NotEditable,
+                        Status = NotificationStatus.Editable,
                         ThumbUrl = original.Mc?.AvatarUrl
                     });
+
+                    if (IsWithin24Hours(entity.EventStart, entity.McCancelDate))
+                    {
+                        await CreateAutomaticRating(entity, true);
+                    }
                 }
                 else if (entity.ClientCancelDate != null)
                 {
+                    // Client cancelled
                     await _notificationService.AddAsync(new NotificationDto
                     {
                         UserId = entity.McId,
                         Type = NotificationType.ContractCanceled,
-                        Message = $"The contract on event {entity.EventName} is canceled.",
+                        Message = $"Hợp đồng cho sự kiện {entity.EventName} đã bị hủy.",
                         AdditionalInfo = JsonConvert.SerializeObject(new ContractCanceledAdditionalInfo
                         {
                             ContractId = entity.Id
                         }, serializerSettings),
                         IsRead = false,
-                        Status = NotificationStatus.NotEditable,
+                        Status = NotificationStatus.Editable,
                         ThumbUrl = original.Client?.AvatarUrl
                     });
+
+                    if (IsWithin24Hours(entity.EventStart, entity.ClientCancelDate))
+                    {
+                        await CreateAutomaticRating(entity, false);
+                    }
                 }
             }
 
