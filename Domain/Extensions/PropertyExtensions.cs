@@ -18,16 +18,6 @@ namespace Domain.Extensions
                 return false;
             }
 
-            if (property.PropertyType == typeof(string))
-            {
-                return !string.IsNullOrEmpty((string)value);
-            }
-
-            if (property.PropertyType == typeof(DateTime))
-            {
-                return (DateTime)value != DateTime.MinValue;
-            }
-
             return true;
         }
     }

@@ -39,11 +39,13 @@ namespace Application.Dtos.User
         /// <summary>
         /// điểm đánh giá trung bình
         /// </summary>
+        [NotMapped]
         public decimal? AvgRating { get; set; }
 
         /// <summary>
         /// số lượt đánh giá
         /// </summary>
+        [NotMapped]
         public int? ReviewCount { get; set; }
 
         public Gender? Gender { get; set; }

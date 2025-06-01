@@ -162,4 +162,13 @@ app.MapControllers();
 
 app.MapHub<NotificationHub>("/notificationHub");
 
+// ****** ADD THE HEALTH CHECK ENDPOINT HERE ******
+app.MapGet("/api/health", () =>
+{
+    // You can return a simple anonymous object or just Results.Ok()
+    return Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow });
+    // Or even simpler for just a 200 OK:
+    // return Results.Ok();
+});
+
 app.Run();

@@ -1,0 +1,17 @@
+delete from client_review_mc where contract_id in
+(select id from contract where mc_id in (select id from user where email in ('trinhquycong@gmail.com' , 'congtrinhh.vlogger@gmail.com'))
+or client_id in  (select id from user where email in ('trinhquycong@gmail.com' , 'congtrinhh.vlogger@gmail.com')))
+;
+delete from mc_review_client where contract_id in
+(select id from contract where mc_id in (select id from user where email in ('trinhquycong@gmail.com' , 'congtrinhh.vlogger@gmail.com'))
+or client_id in  (select id from user where email in ('trinhquycong@gmail.com' , 'congtrinhh.vlogger@gmail.com')))
+;
+
+delete from contract where mc_id in (select id from user where email in ('trinhquycong@gmail.com' , 'congtrinhh.vlogger@gmail.com'))
+or client_id in  (select id from user where email in ('trinhquycong@gmail.com' , 'congtrinhh.vlogger@gmail.com'))
+;
+
+delete from notification where user_id in (select id from user where email in ('trinhquycong@gmail.com' , 'congtrinhh.vlogger@gmail.com'));
+
+delete from user where email in ('trinhquycong@gmail.com' , 'congtrinhh.vlogger@gmail.com');
+
