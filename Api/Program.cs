@@ -18,6 +18,7 @@ using Microsoft.IdentityModel.Tokens;
 using MySql.Data.MySqlClient;
 using System.Data;
 using System.Text;
+using Application.Infrastructure.Converters; // Added for the custom DateTime converter
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,7 +75,12 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new UtcToServerLocalTimeConverter());
+        // Add other System.Text.Json options here if needed in the future
+    });
 
 builder.Services.AddAWSService<IAmazonS3>();
 builder.Services.AddSingleton(sp =>
