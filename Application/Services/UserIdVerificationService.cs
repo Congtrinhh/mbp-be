@@ -19,7 +19,7 @@ namespace Application.Services
         private readonly IUserIdVerificationRepository _verificationRepository;
         private readonly IIdInfoRepository _idInfoRepository;
         private readonly IUserRepository _userRepository;
-        private readonly S3Service _s3Service;
+        private readonly IS3Service _s3Service;
         protected readonly IMapper _mapper;
         private readonly string _fptAiApiKey;
         private readonly HttpClient _httpClient;
@@ -29,7 +29,7 @@ namespace Application.Services
             IUserIdVerificationRepository verificationRepository,
             IIdInfoRepository idInfoRepository,
             IUserRepository userRepository,
-            S3Service s3Service,
+            IS3Service s3Service,
             IMapper mapper,
             ICurrentUserService currentUserService) : base(verificationRepository, currentUserService)
         {

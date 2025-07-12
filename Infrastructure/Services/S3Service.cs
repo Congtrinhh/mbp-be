@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Application.Services
+namespace Infrastructure.Services
 {
     public class S3Service : IS3Service
     {

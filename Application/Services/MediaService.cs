@@ -12,11 +12,11 @@ namespace Application.Services
 {
     public class MediaService : BaseService<Media, MediaDto>, IMediaService
     {
-        private readonly S3Service _s3Service;
+        private readonly IS3Service _s3Service;
         
         public MediaService(
             IMediaRepository repository, 
-            S3Service s3Service,
+            IS3Service s3Service,
             ICurrentUserService currentUserService) 
             : base(repository, currentUserService)
         {

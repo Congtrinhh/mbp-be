@@ -11,12 +11,12 @@ namespace Application.Services
 {
     public class UserService : BaseService<User, UserDto>, IUserService
     {
-        private readonly S3Service _s3Service;
+        private readonly IS3Service _s3Service;
         private readonly IUserRepository _userRepository;
 
         public UserService(
             IUserRepository repository, 
-            S3Service s3Service,
+            IS3Service s3Service,
             ICurrentUserService currentUserService) 
             : base(repository, currentUserService)
         {

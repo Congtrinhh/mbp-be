@@ -18,7 +18,8 @@ using Microsoft.IdentityModel.Tokens;
 using MySql.Data.MySqlClient;
 using System.Data;
 using System.Text;
-using Application.Infrastructure.Converters; // Added for the custom DateTime converter
+using Application.Infrastructure.Converters;
+using Infrastructure.Services; // Added for the custom DateTime converter
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -86,8 +87,8 @@ builder.Services.AddAWSService<IAmazonS3>();
 builder.Services.AddSingleton(sp =>
 {
     var s3Client = sp.GetRequiredService<IAmazonS3>();
-    var bucketName = builder.Configuration["AWS:BucketName"];
-    return new S3Service(s3Client, bucketName);
+    var bucketName = builder.Configuration["AWS:BucketName"] ?? string.Empty;
+    return new S3Service(s3Client, bucketName) as IS3Service;
 });
 
 builder.Services.AddAuthenticationServices();
