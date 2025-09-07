@@ -2,6 +2,7 @@ using Amazon.S3;
 using Api.Extensions;
 using Api.Middleware;
 using Application.Admin.Mapping;
+using Application.Converters;
 using Application.Hubs;
 using Application.Interfaces;
 using Application.Interfaces.Admin;
@@ -10,17 +11,17 @@ using Application.ScheduledTask;
 using Application.Services;
 using Application.Services.Admin;
 using Infrastructure.Admin.Data;
+using Infrastructure.Data;
 using Infrastructure.Repositories;
 using Infrastructure.Repositories.Admin;
+using Infrastructure.Services; 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MySql.Data.MySqlClient;
 using System.Data;
 using System.Text;
-using Application.Infrastructure.Converters;
-using Infrastructure.Services; // Added for the custom DateTime converter
-
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +35,7 @@ builder.Services.AddAutoMapper(typeof(AutoMapperProfile).Assembly, typeof(AdminM
 // Add services to the container.
 builder.Services.AddScoped(typeof(IBaseRepository<, >), typeof(BaseRepository<, >));
 builder.Services.AddScoped(typeof(IBaseService<,>), typeof(BaseService<,>));
-builder.Services.AddScoped(typeof(IUserRepository), typeof(UserRepository));
+builder.Services.AddScoped(typeof(IUserRepository), typeof(EFCoreUserRepository));
 builder.Services.AddScoped(typeof(IUserService), typeof(UserService));
 builder.Services.AddScoped(typeof(IMediaRepository), typeof(MediaRepository));
 builder.Services.AddScoped(typeof(IMediaService), typeof(MediaService));
@@ -59,13 +60,11 @@ builder.Services.AddScoped(typeof(IAdminBaseRepository<>), typeof(AdminBaseRepos
 builder.Services.AddScoped(typeof(IAdminBaseService<,>), typeof(AdminBaseService<,>));
 builder.Services.AddScoped(typeof(IAdminUserService), typeof(AdminUserService));
 
-
 //signalR
 builder.Services.AddSignalR();
 
 // scheduled task
 builder.Services.AddHostedService<ReviewBackgroundService>();
-
 
 // Add CORS services.
 builder.Services.AddCors(options =>
@@ -80,7 +79,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new UtcToServerLocalTimeConverter());
-        // Add other System.Text.Json options here if needed in the future
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
     });
 
 builder.Services.AddAWSService<IAmazonS3>();
@@ -92,7 +92,6 @@ builder.Services.AddSingleton(sp =>
 });
 
 builder.Services.AddAuthenticationServices();
-
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -140,6 +139,14 @@ builder.Services.AddDbContext<AdminDbContext>(options =>
 // Register AdminDbContext as base DbContext for AdminBaseRepository
 builder.Services.AddScoped<DbContext, AdminDbContext>();
 
+// Register ApplicationDbContext
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseMySql(
+        connectionString,
+        serverVersion,
+        b => b.MigrationsAssembly("Infrastructure")
+    )
+);
 
 var app = builder.Build();
 
@@ -179,3 +186,5 @@ app.MapGet("/api/health", () =>
 });
 
 app.Run();
+
+public partial class Program { }

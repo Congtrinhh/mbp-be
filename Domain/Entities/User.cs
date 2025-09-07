@@ -63,6 +63,9 @@ namespace Domain.Entities
         public string? AvatarUrl { get; set; }
         public string? Facebook { get; set; }
         public string? Zalo { get; set; }
+
+        public virtual ICollection<McType> McTypes { get; set; } = new List<McType>();
+        public virtual ICollection<Province> Provinces { get; set; } = new List<Province>();
+        public virtual ICollection<HostingStyle> HostingStyles { get; set; } = new List<HostingStyle>();
     }
 }
-    

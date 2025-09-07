@@ -5,6 +5,8 @@ namespace Domain.Entities
     /// </summary>
     public class HostingStyle : BaseEntity
     {
-        public string Label { get; set; } = string.Empty; 
+        public string Label { get; set; } = string.Empty;
+
+        public virtual ICollection<User> Users { get; set; } = new List<User>();
     }
 }

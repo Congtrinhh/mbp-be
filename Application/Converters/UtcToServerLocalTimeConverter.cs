@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Application.Infrastructure.Converters
+namespace Application.Converters
 {
     /// <summary>
     /// Converts a UTC DateTime string from JSON to the server's local DateTime 

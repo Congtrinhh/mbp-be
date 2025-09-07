@@ -14,5 +14,7 @@ namespace Domain.Entities
         [NotMapped]
         public int? McId { get; set; }
         #endregion
+
+        public virtual ICollection<User> Users { get; set; } = new List<User>();
     }
 }
